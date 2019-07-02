@@ -1,0 +1,53 @@
+---
+title: "Just plots"
+date: "July 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+library(tidyverse)
+```
+
+```{r, fig.align='center'}
+for (i in 2:7){
+  load(glue::glue("site{i}.RData"))
+}
+
+site2$csci
+site3$csci
+site4$csci
+site5$csci
+site6$csci
+site7$csci
+
+site2$oovere
+site3$oovere
+site4$oovere
+site5$oovere
+site6$oovere
+site7$oovere
+
+site2$mmi
+site3$mmi
+site4$mmi
+site5$mmi
+site6$mmi
+site7$mmi
+
+ranked_data <- bind_rows(site2[['est']],
+                         site3[['est']],
+                         site4[['est']],
+                         site5[['est']],
+                         site6[['est']],
+                         site7[['est']])
+
+ranked_data %>%
+  ggplot() +
+  geom_col(aes(y = delta, x = CSCI, fill = count)) +
+  labs(title = "CSCI score vs. Delta",
+       subtitle = "Might need a lot more data in order to get the distribution",
+       caption = "Delta being the difference between exponential and spherical ranges")
+
+
+```

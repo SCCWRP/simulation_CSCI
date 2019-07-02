@@ -1,0 +1,421 @@
+---
+title: "CSCI Simulating Functions"
+author: "QThi"
+date: "July 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+library(tidyverse)
+```
+
+## Sampling function
+
+Please refer to Apendix I for sampling function R code
+
+This project requires two dataset: `tblgismetrics` and `tbl_taxonomyresults`
+
+### Picking site
+
+Steps for simulating scores
+
+- Step 1: pick site (StationCode) from a dataset called `station_list`
+    - This list was created based on a list of sites from Raphi and the two data set mentioned above
+    - Number of bugs for each site is around 500-600
+    - Collection method code is either BMI_RWB_MCM or BMI_RWB.
+    
+- Step 2: Reformating the data (names, columns) to feed into the function.
+    
+- Step 3: Run the *sample_fun* function. Five parameters are needed:
+    - `bug`: from `tbl_taxonomyresults` dataset
+    - `gis`: from `tblgismetrics` data set
+    - `site`: chosen site to run simulations on
+    - `inc`: increment of number of bugs
+    - `it`: number of iterations (times to resample for each increment of bug)
+    
+### sample_fun
+
+This function does the following:
+
+- take the parameter `site` and filter `bug` and `gis` data to match StationCode.
+- Clean the bug using *CSCI::cleanData()* (replace any unknown bugs)
+- Compute orignal CSCI() on the station provided. **This infomation is recorded in the RData file**
+- Sample only 500 bugs from the chosen `bug` dataset (this is to control variations)
+- Running *CSCI()* parallel *foreach()* that return a list of items:
+    - Core, Suppl1_mmi, Suppl1_grps, all *CSCI()* output
+    - For each iterations `it`, there is one list
+    - For each number of bug from 50 to 500 increment of `inc`, there are `it` lists
+    - **Result of such loop is recoded in the RData file**
+- Write RData file to the data folder.
+
+## Plot function
+
+Please refer to Apendix II for plotting function R code
+
+parameter: `site`
+These `site` are provided in a list.
+This function returns:
+
+- tibble with summary information of iterations, models fitted values
+- tibble with nugget, sill, and range information for the two fitted models.
+- 3 plots for CSCI, MMI, and OoverE scores.
+
+The function does the following:
+
+### Reformating output
+
+Each site will have its own data file ".RData" in the data folder. Based on the parameter, the function will load in the data:
+
+- Reformat the data with *modify_depth()* function, the output is a tibble 
+    - Count: number of bugs in each iterations
+    - The rest has the format of *CSCI()* output with columns combined for each iteration.
+- Calculate mean, standard deviation, 95% bounds of each count.
+- Create tibble with all the calculations (summary_data)
+
+### Fitting models into the mean of `CSCI score`
+
+Since we are interested in the least number of bugs we need in order to trust *CSCI()* output, we would want to run a model (variograms) on the mean of CSCI score.
+
+- *nls()* is used to find points of convergence
+    - x = Count, y = CSCI_mean
+    - function: spherical or exponential.
+    - starting values are set to be reasonable to fit into all data.
+- Adding values from spherical/exponential functions (y's) to `summary_data`
+
+### Plots
+
+There are three plots created:
+
+- CSCI_plot: contains all the infomations about CSCI scores and the two model fits. Range (ideal number of bugs) for each model is included.
+- MMI_plot: MMI score along with lower/upper bound of simulated data
+- OoverE_plot: OoverE (Observed over Expected) score, lower/upper bounds
+
+This function can be run with a *for* loop to go through all the available site data.
+
+
+## Present and Future work
+
+- ranking CSCI scores and come up with a plot that shows the difference in the ranges provided by the two models.
+- waiting on more simulating data (takes forever to run)
+
+
+## Some sample outputs
+```{r, fig.align='center'}
+
+
+for (i in 2:7){
+  load(glue::glue("site{i}.RData"))
+}
+
+site2$csci
+site3$csci
+site4$csci
+site5$csci
+site6$csci
+site7$csci
+
+ranked_data <- bind_rows(site2[['est']],
+                         site3[['est']],
+                         site4[['est']],
+                         site5[['est']],
+                         site6[['est']],
+                         site7[['est']])
+
+
+ranked_data %>%
+  ggplot() +
+  geom_col(aes(y = delta, x = CSCI, fill = count)) +
+  labs(title = "CSCI score vs. Delta",
+       subtitle = "Might need a lot more data in order to get the distribution",
+       caption = "Delta being the difference between exponential and spherical ranges")
+
+
+```
+
+
+## Appendix I
+
+```{r, echo = T, eval=F}
+library(dbplyr)
+library(dplyr)
+library(RPostgreSQL)
+library(tidyverse)
+library(PHABMetrics)
+library(PHAB)
+
+# setup connection
+con <- DBI::dbConnect(
+  RPostgreSQL::PostgreSQL(),
+  dbname = 'smc', 
+  host = '192.168.1.17', 
+  user = rstudioapi::askForPassword('Database user'), 
+  password = rstudioapi::askForPassword("Database password")
+)
+
+# raw connections
+datmetcon <- tbl(con, 'tmp_phabmetrics')
+datrawcon <- tbl(con, 'tmp_phab')
+datgiscon <- tbl(con, 'tblgismetrics')
+datbugcon <- tbl(con, 'tbl_taxonomyresults')
+CSCIcore <- tbl(con, 'csci_core')
+
+station_list <- read_csv("data/station_list.csv")
+
+gis <- as_tibble(datgiscon)  %>%
+  select("stationcode", "area_sqkm", "bdh_ave", 
+         "elev_range", "kfct_ave", "p_mean", 
+         "new_lat", "new_long", "ppt_00_09", 
+         "site_elev", "sumave_p", "temp_00_09")
+# Bug data
+bug <- as_tibble(datbugcon) %>% 
+  select("stationcode", "sampledate", "fieldreplicate", 
+         "fieldsampleid","finalid", "lifestagecode", 
+         "baresult", "result", "unit", 
+         "distinctcode")%>%
+  mutate(
+    baresult = as.numeric(baresult)
+  )
+
+# Fix names
+colnames(bug) <- c("StationCode","SampleDate","SampleID", 
+                   "FieldSampleID", "FinalID", "LifeStageCode", 
+                   "BAResult", "Result", "Unit", 
+                   "distinct")
+
+colnames(gis) <- c("StationCode", "AREA_SQKM", "BDH_AVE",
+                   "ELEV_RANGE", "KFCT_AVE", "P_MEAN",
+                   "New_lat", "New_Long", "PPT_00_09",
+                   "SITE_ELEV", "SumAve_P", "TEMP_00_09")
+
+# bug and gis datas are provided
+# pick a site in the list of site provided or enter a string with quotation marks "sitecode"
+# it = number of iterations in resampling
+# inc = number of increament (every 20, 30, 40, ect.)
+
+
+fun <- function(bug, gis, site, it, inc){
+  
+  library(foreach)
+  library(doParallel)
+  library(CSCI)
+  
+  bug.site <- bug  %>%
+    filter(StationCode == site) %>%
+    filter(SampleDate == max(SampleDate)) %>%
+    filter(SampleID == max(SampleID))
+  
+  gis.station <- gis %>% 
+    filter(StationCode == site) 
+  
+  if(nrow(bug.site) == 0 | nrow(gis.station) == 0) 
+  {return("NOPE! Not this site")}
+  
+  bug.site.clean <- CSCI::cleanData(bug.site, purge = TRUE, msgs = FALSE)
+  
+  # Expand of bug data
+  bug.expand <- bug.site.clean %>% 
+    uncount(as.numeric(BAResult)) %>% 
+    mutate(BAResult, BAResult= 1)
+  
+  # Site record
+  site_original <- CSCI(bug.site.clean,gis.station)
+  
+  # Expand of bug data
+  bug.expand <- bug.site.clean %>% 
+    uncount(as.numeric(BAResult)) %>% 
+    mutate(BAResult, BAResult= 1)
+  
+  nc <- detectCores()
+  cl<-makeCluster(nc-1)
+  registerDoParallel(cl)
+  
+  nb <- seq(50, 500, by = inc)
+  ind_500 <- sample(1:nrow(bug.expand), 500, replace = F)
+  bug_500_pick <- bug.expand[ind_500,]
+  
+  strt <- Sys.time()
+  res <- foreach(i = 1:length(nb), .packages = c("tidyverse", "CSCI") ) %dopar% {
+    core_res <- c()
+    mmi_res <- c()
+    grp_res <-c()
+    omni_res <- c()
+    for (j in 1:it){
+      if(nb[i] == 500){j = it}
+      ind <- sample(1:nrow(bug_500_pick), nb[i], replace = F)
+      bugs <- bug_500_pick[ind,] %>% 
+        count(BAResult, FinalID, LifeStageCode,
+              SampleDate, SampleID, Result,
+              Unit, distinct, FieldSampleID, StationCode) %>%
+        mutate(BAResult = n)
+      gis <- gis.station
+      omni <- CSCI(bugs,gis)
+      omni_res[[j]] <- omni
+      core_res[[j]] <- omni$core
+      mmi_res[[j]] <- omni$Suppl1_mmi
+      grp_res[[j]] <- omni$Suppl1_grps
+    }
+    list(core_res,
+         mmi_res,
+         grp_res,
+         omni_res)
+  }
+  
+  t = print(Sys.time()-strt)
+  
+  save(site_original, res, file = paste0("stations/", site, ".RData"))
+  return()
+}
+
+
+# Parameters for the sample function
+
+it = 100
+inc = 10
+
+
+site <- c("SMCR8_277","SMC00476", "SGUR103",  "SMC01424", "SMC01384", 
+          "801M16861","SMC02984", "SMC16832", "801M12669","412CE0732")
+
+for (i in 1:length(site)){
+  fun(bug, gis, site[i], it, inc)
+}
+
+```
+
+## Appendix II
+
+```{r, echo = T, eval = F}
+site <- c("SMCR8_277","SMC00476", "SGUR103",  "SMC01424", "SMC01384", 
+          "801M16861","SMC02984", "SMC16832", "801M12669","412CE0732")
+
+plot_fun <- function(site){
+  load(paste0("stations/",site,".RData"))
+  res1 <- res %>% enframe()
+  result <- c()
+  
+  for (i in 1:nrow(res1)){
+    result[[i]]<- res[[i]] %>%
+      enframe() %>%
+      filter(name != 4) %>%
+      deframe()
+  }
+  
+  omni_data <- result %>% 
+    modify_depth(.depth = 2, .f = ~as_tibble(bind_rows(.))) %>%
+    modify_depth(.depth = 1, .f = ~as_tibble(bind_cols(.))) %>%
+    bind_rows() %>%
+    select(-c(StationCode1, StationCode2, SampleID1))
+
+  summary_data <- omni_data %>%
+    group_by(Count) %>%
+    select(Count, MMI, CSCI, OoverE) %>%
+    summarise_all(.,
+                  list(~mean(.), 
+                       ~sd(.), 
+                       ~quantile(., probs = 0.025),
+                       ~quantile(., probs = .975))
+    )
+  
+  site_core <- site_original$core
+  site <- site_core$StationCode
+  site_bug <- site_core$Count
+  site_csci <- site_core$CSCI
+  site_mmi <- site_core$MMI
+  site_oovere <- site_core$OoverE
+  
+  mean_test <- summary_data %>%
+    select(Count, CSCI_mean)
+  
+  x <- mean_test$Count
+  y <- mean_test$CSCI_mean
+  sph_model = nls(y ~ c0s + cs*(1.5*abs(x)/as - .5*(abs(x)/as)^3), 
+          start = list(c0s = 0.4, cs = 0.9, as = 200), trace = F)
+  temp <- summary(sph_model)$coef
+  c0s = temp[1,1]
+  cs = temp[2,1]
+  as = temp[3,1]
+  
+  exp_model = nls(y~c0e + ce*(1-exp(-abs(x)/ae)), 
+                  start = list(c0e = 0.3, ce = 0.9, ae = 400), trace = F)
+  temp1 <- summary(exp_model)$coef
+  c0e = temp1[1,1]
+  ce = temp1[2,1]
+  ae = temp1[3,1]
+  x1 <- x
+  spher <- (c0s + cs*(1.5*abs(x1)/as - .5*(abs(x1)/as)^3)) * 
+    (x1 <= as) + (c0s+cs)*(x1 > as)
+  expo <- (c0e + ce*(1-exp(-abs(x1)/ae)))
+  summary_data <- add_column(summary_data, Sphere = spher, Expo = expo)
+  
+  CSCI_plot <- summary_data %>%
+    ggplot() +
+    geom_point(aes(Count, CSCI_mean)) +
+    geom_line(aes(Count,CSCI_quantile..3), color = "blue",
+              size = 0.4, linetype = 4) +
+    geom_line(aes(Count, CSCI_quantile..4), color = "blue",
+              size = 0.4, linetype = 4) +
+    geom_line(aes(Count, Sphere, color = "Spherical"), size = 1) +
+    geom_line(aes(Count, Expo, color = "Exponential"), size = 1) + 
+    geom_hline(yintercept = site_csci, linetype = 3) +
+    geom_hline(yintercept = (site_csci -.1), linetype = 3) +
+    geom_hline(yintercept = (site_csci +.1), linetype = 3) +
+    geom_vline(xintercept = ae, color = "darkgreen", linetype = 4) +
+    geom_vline(xintercept = as, color = "red", linetype = 4) +
+    labs(x = "number of bug", y = "CSCI score",
+         fill = "model") +
+    scale_color_manual("", 
+                       breaks = c("Spherical", "Exponential"), 
+                       values = c("darkgreen", "red"))+
+    ggtitle(paste("Station", site), 
+            subtitle = paste("CSCI score = ", round(site_csci,3), ", number of bugs = ", site_bug,
+                             "\nrange: exponential: ", round(ae,2),
+                             "\n           spherical: ", round(as,2)))
+  
+  OoverE_plot <- summary_data %>%
+    ggplot()+
+    geom_line(aes(Count, OoverE_mean), color = "red",
+              size = 0.7, linetype = 1) +
+    geom_line(aes(Count, OoverE_quantile..3), color = "blue",
+              size = 0.4, linetype = 4) +
+    geom_line(aes(Count, OoverE_quantile..4), color = "blue",
+              size = 0.4, linetype = 4) +
+    labs(x = "number of bug", y = "Observed/Expected")+
+    ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
+                                                      ", O/E = ", round(site_oovere,3)))
+  
+  MMI_plot <- summary_data %>%
+    select(Count, contains("MMI")) %>%
+    ggplot()+
+    geom_line(aes(Count, MMI_mean), color = "red",
+              size = 0.7, linetype = 1) +
+    geom_line(aes(Count, MMI_quantile..3), color = "blue",
+              size = 0.4, linetype = 4) +
+    geom_line(aes(Count, MMI_quantile..4), color = "blue",
+              size = 0.4, linetype = 4) +
+    labs(x = "number of bug", y = "MMI")+
+    ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
+                                                      ", MMI = ", round(site_mmi,3)))
+  est_data <- tibble(count = site_bug,
+                     CSCI = site_csci,
+                     MMI = site_mmi,
+                     OoverE = site_oovere,
+                     nugget_s = c0s, nugget_e = c0e,
+                     sill_s = cs, sill_e = ce, 
+                     range_s = as, range_e = ae, 
+                     delta = as-ae)
+  
+  return(list(csci = CSCI_plot,
+              oovere = OoverE_plot, 
+              mmi = MMI_plot, 
+              est = est_data, 
+              summ = summary_data))
+}
+
+aa <- plot_fun(site[2])
+
+```
+
+
+
+
