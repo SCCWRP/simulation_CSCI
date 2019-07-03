@@ -31,15 +31,19 @@ test <- summary_within_station %>%
   ) %>%
   gather(.,change_type, rel.diff, c(change_CSCI, change_MMI, change_OE)) %>%
   gather(., mean_group, mean, c(contains("_mean"))) %>%
-  gather(., sd_group, stdv, c(contains("_sd")))
+  gather(., sd_group, stdv, c(contains("_sd"))) %>% 
+  mutate(type1 = rep("mean"), type2 = rep("sd")) %>%
+  gather(., number, value, c(type1, type2))
 
 View(test)
 
 
 test %>% 
-  filter(StationCode == "SMC00476") %>%
-  ggplot() +
+  ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = reduction_bug, y = rel.diff)) +
   geom_line(aes(x = reduction_bug, y = stdv)) +
-  facet_grid(change_type ~ sd_group)
+  facet_grid(change_type~value)
+
+
+readr::write_rds(summary)
 
