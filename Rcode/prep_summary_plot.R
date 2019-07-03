@@ -17,9 +17,29 @@ summary_within_station <- simulated_data_bind %>%
   select(StationCode, Count, CSCI, MMI, OoverE) %>%
   summarise_all(.,
                 list(~mean(.), 
-                     ~sd(.), 
-                     ~quantile(., probs = 0.025),
-                     ~quantile(., probs = .975))
-  )
+                     ~sd(.)
+  ))
 
-summary_within_station %>% last()
+test <- summary_within_station %>% 
+  group_by(StationCode) %>%
+  arrange(StationCode, desc(Count)) %>%
+  mutate(
+    change_CSCI = abs(CSCI_mean-first(CSCI_mean))/first(CSCI_mean),
+    change_MMI = abs(MMI_mean-first(MMI_mean))/first(MMI_mean),
+    change_OE = abs(OoverE_mean-first(OoverE_mean))/first(OoverE_mean),
+    reduction_bug = (500 - Count)
+  ) %>%
+  gather(.,change_type, rel.diff, c(change_CSCI, change_MMI, change_OE)) %>%
+  gather(., mean_group, mean, c(contains("_mean"))) %>%
+  gather(., sd_group, stdv, c(contains("_sd")))
+
+View(test)
+
+
+test %>% 
+  filter(StationCode == "SMC00476") %>%
+  ggplot() +
+  geom_line(aes(x = reduction_bug, y = rel.diff)) +
+  geom_line(aes(x = reduction_bug, y = stdv)) +
+  facet_grid(change_type ~ sd_group)
+
