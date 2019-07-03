@@ -1,7 +1,37 @@
 
 
+subsampling.site.info <- function(site, station_list){
+  site_pick_core <- tidying_simulated_data(site) %>%
+    filter(Count == 500)
+  
+  site <- site_pick_core$StationCode
+  site_csci <- site_pick_core$CSCI
+  site_mmi <- site_pick_core$MMI
+  site_oovere <- site_pick_core$OoverE
+  
+  site_info <- station_list %>%
+    filter(StationCode == site)
+  site_bug <- site_info$Count
+  
+  return(list(site = site, 
+              csci = site_csci, 
+              mmi = site_mmi, 
+              oovere = site_oovere,
+              cnt = site_bug))
+}
 
-summaried_data_with_models_to_csci_mean <- function(site){
+
+
+
+
+summaried_data_with_models_to_csci_mean <- function(site, station_list){
+  
+  scores <- subsampling.site.info(site, station_list)
+  site_csci <- scores$csci
+  site_mmi <- scores$mmi
+  site_oovere <- scores$oovere
+  site_bug <- scores$cnt
+  
   summary_data <- summarising_tidied_data(site)
   mean_test <- summary_data %>%
     select(Count, CSCI_mean)
@@ -26,23 +56,18 @@ summaried_data_with_models_to_csci_mean <- function(site){
     (x1 <= as) + (c0s+cs)*(x1 > as)
   expo <- (c0e + ce*(1-exp(-abs(x1)/ae)))
   summary_model_data <- add_column(summary_data, Sphere = spher, Expo = expo)
-  return(summary_model_data)
-}
-
-
-
-subsampling.site.info <- function(site){
-  site_pick_core <- tidying_simulated_data(site) %>%
-    select(Count == 500)
   
-  site <- site_pick_core$StationCode
-  site_csci <- site_pick_core$CSCI
-  site_mmi <- site_pick_core$MMI
-  site_oovere <- site_pick_core$OoverE
+  est_data <- tibble(count = site_bug,
+                     CSCI = site_csci,
+                     MMI = site_mmi,
+                     OoverE = site_oovere,
+                     nugget_s = c0s, nugget_e = c0e,
+                     sill_s = cs, sill_e = ce, 
+                     range_s = as, range_e = ae, 
+                     delta = as-ae)
   
-  return(list(site = site, 
-              csci = site_csci, 
-              mmi = site_mmi, 
-              oovere = site_oovere))
+  return(list(summ = summary_model_data,
+              est = est_data)
+         )
 }
 

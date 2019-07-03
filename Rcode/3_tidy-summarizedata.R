@@ -1,4 +1,5 @@
 
+site = "SMC00476"
 
 tidying_simulated_data <- function(site){
   load_dir <- paste0("stations/", site, ".RData")

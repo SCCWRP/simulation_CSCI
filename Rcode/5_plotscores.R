@@ -1,15 +1,13 @@
 
 scores_plot <- function(site, station_list){
-  scores <- picked.site.score(site)
+  scores <- subsampling.site.info(site = site, station_list= station_list)
   site_csci <- scores$csci
   site_mmi <- scores$mmi
   site_oovere <- scores$oovere
+  site_bug <- scores$cnt
   
-  site_info <- station_list %>%
-    select(StationCode == site)
-  site_bug <- site_info$Count
+  summary_data <-  summaried_data_with_models_to_csci_mean(site)$summ
   
-  summary_data <-  summaried_data_with_models_to_csci_mean(site)
   CSCI_plot <- summary_data %>%
     ggplot() +
     geom_point(aes(Count, CSCI_mean)) +
