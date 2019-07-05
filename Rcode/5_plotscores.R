@@ -22,7 +22,7 @@ scores_plot <- function(site, station_list){
     geom_hline(yintercept = (site_csci +.1), linetype = 3) +
     geom_vline(xintercept = ae, color = "darkgreen", linetype = 4) +
     geom_vline(xintercept = as, color = "red", linetype = 4) +
-    labs(x = "number of bug", y = "CSCI score",
+    labs(x = "Sample size", y = "CSCI score",
          fill = "model") +
     scale_color_manual("", 
                        breaks = c("Spherical", "Exponential"), 
@@ -40,9 +40,9 @@ scores_plot <- function(site, station_list){
               size = 0.4, linetype = 4) +
     geom_line(aes(Count, OoverE_quantile..4), color = "blue",
               size = 0.4, linetype = 4) +
-    labs(x = "number of bug", y = "Observed/Expected")+
-    ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
-                                                      ", O/E = ", round(site_oovere,3)))
+    labs(x = "Sample size", y = "Observed/Expected")#+
+    # ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
+    #                                                   ", O/E = ", round(site_oovere,3)))
   
   MMI_plot <- summary_data %>%
     ggplot()+
@@ -52,10 +52,10 @@ scores_plot <- function(site, station_list){
               size = 0.4, linetype = 4) +
     geom_line(aes(Count, MMI_quantile..4), color = "blue",
               size = 0.4, linetype = 4) +
-    labs(x = "number of bug", y = "MMI")+
-    ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
-                                                      ", MMI = ", round(site_mmi,3)))
-  
+    labs(x = "Sample size", y = "MMI")#+
+    # ggtitle(paste("Station ", site), subtitle = paste("bugs = ", site_bug,
+    #                                                   ", MMI = ", round(site_mmi,3)))
+    
   return(list(csci = CSCI_plot, 
               oovere = OoverE_plot, 
               mmi = MMI_plot))

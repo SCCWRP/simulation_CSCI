@@ -21,28 +21,21 @@ summary_within_station <- simulated_data_bind %>%
   ))
 
 test <- summary_within_station %>% 
-  group_by(StationCode) %>%
-  arrange(StationCode, desc(Count)) %>%
+  gather('var', 'val', -StationCode, -Count) %>% 
+  separate(var, c('index', 'measure'), sep = '_') %>% 
+  group_by(StationCode, index, measure) %>%
   mutate(
-    change_CSCI = abs(CSCI_mean-first(CSCI_mean))/first(CSCI_mean),
-    change_MMI = abs(MMI_mean-first(MMI_mean))/first(MMI_mean),
-    change_OE = abs(OoverE_mean-first(OoverE_mean))/first(OoverE_mean),
-    reduction_bug = (500 - Count)
+    chng = val / max(val, na.rm = T)
   ) %>%
-  gather(.,change_type, rel.diff, c(change_CSCI, change_MMI, change_OE)) %>%
-  gather(., mean_group, mean, c(contains("_mean"))) %>%
-  gather(., sd_group, stdv, c(contains("_sd"))) %>% 
-  mutate(type1 = rep("mean"), type2 = rep("sd")) %>%
-  gather(., number, value, c(type1, type2))
-
+  ungroup %>% 
+  mutate(Count = 500 - Count)
 View(test)
 
 
 test %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
-  geom_line(aes(x = reduction_bug, y = rel.diff)) +
-  geom_line(aes(x = reduction_bug, y = stdv)) +
-  facet_grid(change_type~value)
+  geom_line(aes(x = Count, y = chng)) +
+  facet_grid(index ~ measure)
 
 
 readr::write_rds(summary)
