@@ -1,22 +1,31 @@
 ---
 title: "CSCI Simulating Functions"
 author: "QThi"
-date: "July 1, 2019"
-output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    code_folding: hide
+self_contained: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```{r setup, include = FALSE, message = F, warning = F}
+knitr::opts_chunk$set(echo = T, warning = F, message = F)
 library(tidyverse)
+library(here)
+library(patchwork)
 ```
 
-## Sampling function
+# {.tabset}
+
+## Functions  
+
+### Sampling function
 
 Please refer to Apendix I for sampling function R code
 
 This project requires two dataset: `tblgismetrics` and `tbl_taxonomyresults`
 
-### Picking site
+#### Picking site
 
 Steps for simulating scores
 
@@ -34,7 +43,7 @@ Steps for simulating scores
     - `inc`: increment of number of bugs
     - `it`: number of iterations (times to resample for each increment of bug)
     
-### sample_fun
+#### sample_fun
 
 This function does the following:
 
@@ -49,7 +58,7 @@ This function does the following:
     - **Result of such loop is recoded in the RData file**
 - Write RData file to the data folder.
 
-## Plot function
+### Plot function
 
 Please refer to Apendix II for plotting function R code
 
@@ -63,7 +72,7 @@ This function returns:
 
 The function does the following:
 
-### Reformating output
+#### Reformating output
 
 Each site will have its own data file ".RData" in the data folder. Based on the parameter, the function will load in the data:
 
@@ -73,7 +82,7 @@ Each site will have its own data file ".RData" in the data folder. Based on the 
 - Calculate mean, standard deviation, 95% bounds of each count.
 - Create tibble with all the calculations (summary_data)
 
-### Fitting models into the mean of `CSCI score`
+#### Fitting models into the mean of `CSCI score`
 
 Since we are interested in the least number of bugs we need in order to trust *CSCI()* output, we would want to run a model (variograms) on the mean of CSCI score.
 
@@ -83,7 +92,7 @@ Since we are interested in the least number of bugs we need in order to trust *C
     - starting values are set to be reasonable to fit into all data.
 - Adding values from spherical/exponential functions (y's) to `summary_data`
 
-### Plots
+## Plots {.tabset .tabset-pills}
 
 There are three plots created:
 
@@ -93,28 +102,51 @@ There are three plots created:
 
 This function can be run with a *for* loop to go through all the available site data.
 
-
-## Present and Future work
-
-- ranking CSCI scores and come up with a plot that shows the difference in the ranges provided by the two models.
-- waiting on more simulating data (takes forever to run)
-
-
-## Some sample outputs
 ```{r, fig.align='center'}
-
-
 for (i in 2:7){
-  load(glue::glue("site{i}.RData"))
+  load(here('Rmarkdown', glue::glue("site{i}.RData")))
 }
+```
 
-site2$csci
-site3$csci
-site4$csci
-site5$csci
-site6$csci
-site7$csci
+### SMC00476 
 
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site2$csci + site2$oovere + site2$mmi + plot_layout(ncol = 3)
+```
+
+### SGUR103 
+
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site3$csci + site3$oovere + site3$mmi + plot_layout(ncol = 3)
+```
+
+### SMC01424 
+
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site4$csci + site4$oovere + site4$mmi + plot_layout(ncol = 3)
+```
+
+### SMC01384
+
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site5$csci + site5$oovere + site5$mmi + plot_layout(ncol = 3)
+```
+
+### 801M16861
+
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site6$csci + site6$oovere + site6$mmi + plot_layout(ncol = 3)
+```
+
+### SMC02984
+
+```{r, fig.height = 5, fig.width = 11, out.width = "100%"}
+site7$csci + site7$oovere + site7$mmi + plot_layout(ncol = 3)
+```
+
+### ranked data
+
+```{r}
 ranked_data <- bind_rows(site2[['est']],
                          site3[['est']],
                          site4[['est']],
@@ -129,9 +161,12 @@ ranked_data %>%
   labs(title = "CSCI score vs. Delta",
        subtitle = "Might need a lot more data in order to get the distribution",
        caption = "Delta being the difference between exponential and spherical ranges")
-
-
 ```
+
+## Present and Future work
+
+- ranking CSCI scores and come up with a plot that shows the difference in the ranges provided by the two models.
+- waiting on more simulating data (takes forever to run)
 
 
 ## Appendix I
