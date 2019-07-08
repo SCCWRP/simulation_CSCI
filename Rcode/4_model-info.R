@@ -10,7 +10,8 @@ subsampling.site.info <- function(site, station_list){
   site_oovere <- site_pick_core$OoverE
   
   site_info <- station_list %>%
-    filter(StationCode == site)
+    filter(StationCode == site) %>%
+    filter(SampleDate == max(SampleDate))
   site_bug <- site_info$Count
   
   return(list(site = site, 
