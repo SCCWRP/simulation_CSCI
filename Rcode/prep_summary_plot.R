@@ -54,7 +54,13 @@ test2 <- summary_within_station %>%
 test2 %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = Count, y = chng)) +
-  facet_grid(index ~ measure)
+  labs( x = "Reduction of bug",
+        y = "Relative difference",
+        title = "Relative Difference of Mean and Standard Deviation for each Scores",
+        subtitle = "As we decrease the number of bug, mean and standard deviation of scores 
+        (CSCI, MMI, O over E) differ significantly") +
+  facet_grid(index ~ measure)+
+  theme_bw()
 
 
 readr::write_rds(summary)
