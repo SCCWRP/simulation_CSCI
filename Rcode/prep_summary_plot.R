@@ -38,5 +38,24 @@ test %>%
   facet_grid(index ~ measure)
 
 
+#relative difference
+
+test2 <- summary_within_station %>% 
+  gather('var', 'val', -StationCode, -Count) %>% 
+  separate(var, c('index', 'measure'), sep = '_') %>% 
+  group_by(StationCode, index, measure) %>%
+  mutate(
+    val = replace_na(val,min(val, na.rm = T)),
+    chng = abs(val - last(val)) /max(val,last(val))
+  ) %>%
+  ungroup %>% 
+  mutate(Count = 500 - Count)
+
+test2 %>% 
+  ggplot(aes(color = StationCode, group = StationCode)) +
+  geom_line(aes(x = Count, y = chng)) +
+  facet_grid(index ~ measure)
+
+
 readr::write_rds(summary)
 
