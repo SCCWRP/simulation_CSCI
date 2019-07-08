@@ -19,9 +19,9 @@ library(patchwork)
 
 ## Functions {.tabset .tabset-pills}
 
-### Prep_bug_data
-
 This project requires three dataset: `tblgismetrics` and `tbl_taxonomyresults` from database, `station_list` from data folder
+
+### Prep data
 
 #### Picking site
 
@@ -88,11 +88,14 @@ prep_bug_data <- function(bug_origin, site){
 This function 
 
 - filters data from original bug data `tbl_taxonomyresults` to get the data for chosen site.
-- cleans the data by *cleanData()*
+- cleans the data by **cleanData()**
 - returns clean bug data
 
 
 ### Sub-sampling
+
+
+#### Sub-sampling bug
 
 ```{r, eval = F}
 sub_sampling_chosen_site <- function(bug_origin, site, num_bug){
@@ -106,12 +109,11 @@ sub_sampling_chosen_site <- function(bug_origin, site, num_bug){
 }
 ```
 
-Since we only want to simulate scores over a specific amount of bugs, we would want to sub-sample the chosen bug data from *prep_bug_data*.
+Since we only want to simulate scores over a specific amount of bugs, we would want to sub-sample the chosen bug data from **prep_bug_data()**.
 
 - `num_bug` is the amount of bugs we want to sample
-- *uncount(value)* replicates the line `value` times.
+- **uncount(value)** replicates the line `value` times.
 - randomly samples 500 indices for rows.
-
 
 
 ### Simulation
@@ -158,14 +160,14 @@ simulating_bugs_and_scores <- function(bug_origin, site, gis, it, inc, num_bug, 
 This function does the following:
 
 - calls previous functions to obtain clean bug data as well as the subsampled data
-- Running *CSCI()* parallel *foreach()* that return a list of items:
-    - Core, Suppl1_mmi, Suppl1_grps, all *CSCI()* output
+- Running **CSCI()** parallel **foreach()** that return a list of items:
+    - Core, Suppl1_mmi, Suppl1_grps, all **CSCI()** output
     - For each iterations `it`, there is one list
     - For each number of bug from `num_bug_start` to `num_bug` increment of `inc`, there are `it` lists
     - **Result of such loop is recoded in the RData file**
 - Write RData file to the data folder.
 
-### Tidy, summarize, extract info
+### Tidy, summarize
 
 #### Tidying_simulated_data
 
@@ -193,11 +195,10 @@ tidying_simulated_data <- function(site){
 }
 ```
 
-
-- Loads in saved data from *simulating_bug_and_score()* in stations folder
-- Reformats the data with *modify_depth()* function, the output is a tibble 
+- Loads in saved data from **simulating_bug_and_score()** in stations folder
+- Reformats the data with **modify_depth()** function, the output is a tibble 
     - Count: number of bugs in each iterations
-    - The rest of the columns have the format of *CSCI()* output with columns combined for each iteration.
+    - The rest of the columns have the format of **CSCI()** output with columns combined for each iteration.
 
 #### Summarizing_tidied_data
 
@@ -302,9 +303,10 @@ summaried_data_with_models_to_csci_mean <- function(site, station_list){
 }
 ```
 
+
 Since we are interested in the least number of bugs we need in order to trust *CSCI()* output, we would want to run a model (variograms) on the mean of CSCI score.
 
-- *nls()* is used to find points of convergence
+- **nls()** is used to find points of convergence
     - x = Count, y = CSCI_mean
     - function: spherical or exponential.
     - starting values are set to be reasonable to fit into all data.
@@ -392,12 +394,12 @@ There are three plots created:
 - MMI_plot: MMI score along with lower/upper bound of simulated data
 - OoverE_plot: OoverE (Observed over Expected) score, lower/upper bounds
 
-This function can be run with a *for* loop to go through all the available site data.
+This function can be run with a **for** loop to go through all the available site data.
+
 
 ### Summary plot
 
 ```{r, eval = F}
-
 site_list <- c("SMCR8_277","SMC00476", "SGUR103",  
                "SMC01424", "SMC01384", "801M16861","SMC02984")
 
@@ -459,6 +461,9 @@ summary_plot <- function(){
 }
 ```
 
+- calculates changes and relative differences of mean and standard deviations of scores from simulated data
+- outputs a summarized plot shows changes according to sample size
+
 ## Plots {.tabset .tabset-pills}
 
 ```{r, fig.align='center'}
@@ -506,8 +511,13 @@ ranked_data %>%
        caption = "Delta being the difference between exponential and spherical ranges")
 ```
 
-## Present and Future work
+### Changes
 
-- ranking CSCI scores and come up with a plot that shows the difference in the ranges provided by the two models.
+```{r, fig.align="center"}
+load(here("Rmarkdown","sums.RData"))
+sum1
+sum2
+```
+
 
 

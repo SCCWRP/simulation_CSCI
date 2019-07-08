@@ -32,7 +32,7 @@ test <- summary_within_station %>%
 View(test)
 
 
-test %>% 
+sum1 <- test %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = Count, y = chng)) +
   facet_grid(index ~ measure)
@@ -51,7 +51,7 @@ test2 <- summary_within_station %>%
   ungroup %>% 
   mutate(Count = 500 - Count)
 
-test2 %>% 
+sum2 <- test2 %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = Count, y = chng)) +
   labs( x = "Reduction of bug",
@@ -63,5 +63,5 @@ test2 %>%
   theme_bw()
 
 
-readr::write_rds(summary)
+save(sum1, sum2, file = "Rmarkdown/sums.RData")
 
