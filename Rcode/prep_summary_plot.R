@@ -18,7 +18,10 @@ summary_within_station <- simulated_data_bind %>%
   summarise_all(.,
                 list(~mean(.), 
                      ~sd(.)
-  ))
+  )) %>%
+  mutate(
+    OoverE_sd = OoverE_sd + 0.0001
+  )
 
 test <- summary_within_station %>% 
   gather('var', 'val', -StationCode, -Count) %>% 
@@ -32,7 +35,7 @@ test <- summary_within_station %>%
 View(test)
 
 
-sum1 <- test %>% 
+test %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = Count, y = chng)) +
   facet_grid(index ~ measure)
@@ -46,12 +49,12 @@ test2 <- summary_within_station %>%
   group_by(StationCode, index, measure) %>%
   mutate(
     val = replace_na(val,min(val, na.rm = T)),
-    chng = abs(val - last(val)) /max(val,last(val))
+    chng = abs(val - last(val)) /max(last(val),val)
   ) %>%
   ungroup %>% 
   mutate(Count = 500 - Count)
 
-sum2 <- test2 %>% 
+test2 %>% 
   ggplot(aes(color = StationCode, group = StationCode)) +
   geom_line(aes(x = Count, y = chng)) +
   labs( x = "Reduction of bug",
@@ -59,7 +62,7 @@ sum2 <- test2 %>%
         title = "Relative Difference of Mean and Standard Deviation for each Scores",
         subtitle = "As we decrease the number of bug, mean and standard deviation of scores 
         (CSCI, MMI, O over E) differ significantly") +
-  facet_grid(index ~ measure)+
+  facet_grid(measure~index, scales= "free_y")+
   theme_bw()
 
 
