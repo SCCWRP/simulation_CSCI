@@ -20,7 +20,8 @@ summary_within_station <- simulated_data_bind %>%
                      ~sd(.)
   )) %>%
   mutate(
-    OoverE_sd = OoverE_sd + 0.0001
+    OoverE_sd = OoverE_sd + 0.0001,
+    CSCI_sd = CSCI_sd/CSCI_mean
   )
 
 test <- summary_within_station %>% 
@@ -32,7 +33,7 @@ test <- summary_within_station %>%
   ) %>%
   ungroup %>% 
   mutate(Count = 500 - Count)
-View(test)
+#View(test)
 
 
 test %>% 
@@ -55,8 +56,10 @@ test2 <- summary_within_station %>%
   mutate(Count = 500 - Count)
 
 test2 %>% 
-  ggplot(aes(color = StationCode, group = StationCode)) +
-  geom_line(aes(x = Count, y = chng)) +
+  ggplot(aes(x = Count, y = chng, color = StationCode, group = StationCode)) +
+  #geom_point(size = 0.25) +
+  geom_smooth(method = "gam", se = F, formula = y ~
+                s(x, k =3)) +
   labs( x = "Reduction of bug",
         y = "Relative difference",
         title = "Relative Difference of Mean and Standard Deviation for each Scores",
