@@ -56,9 +56,11 @@ summaried_data_with_models_to_csci_mean <- function(site, station_list){
   spher <- (c0s + cs*(1.5*abs(x1)/as - .5*(abs(x1)/as)^3)) * 
     (x1 <= as) + (c0s+cs)*(x1 > as)
   expo <- (c0e + ce*(1-exp(-abs(x1)/ae)))
-  summary_model_data <- add_column(summary_data, Sphere = spher, Expo = expo)
+  summary_model_data <- add_column(summary_data, StationCode = rep(site), 
+                                   Sphere = spher, Expo = expo)
   
-  est_data <- tibble(count = site_bug,
+  est_data <- tibble(StationCode = rep(site),
+                     count = site_bug,
                      CSCI = site_csci,
                      MMI = site_mmi,
                      OoverE = site_oovere,
