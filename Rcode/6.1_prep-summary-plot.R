@@ -22,6 +22,10 @@ mean_bind <- model_data_mean %>%
 summary_within_station <- mean_bind %>% 
   group_by(StationCode, Count) %>%
   mutate(
+    OoverE_sd = replace_na(OoverE_sd, 0),
+    CSCI_sd = replace_na(CSCI_sd, 0),
+    MMI_sd = replace_na(MMI_sd, 0),
+
     OoverE_cv = OoverE_sd/OoverE_mean,
     CSCI_cv = CSCI_sd/CSCI_mean,
     MMI_cv = MMI_sd/MMI_mean
@@ -70,7 +74,7 @@ test2 %>%
         #subtitle = "As we decrease the number of bug, mean and standard deviation of scores 
         #(CSCI, MMI, O over E) differ significantly"
         ) +
-  facet_grid(measure~index, scales= "free_y")+
+  facet_grid(measure~index)+
   theme_bw()
 
 
