@@ -3,6 +3,11 @@ library(here)
 library(glue)
 library(tidyverse)
 library(colorspace)
+library(drlib)
+library(dbpyr)
+library(RPostgreSQL)
+
+# effort summary plots ----------------------------------------------------
 
 # import results
 for (i in 2:7){
@@ -115,3 +120,88 @@ p3 <- ggplot(moddat, aes(x = Count, y = cv, group = Site, colour = Site)) +
 png(here('summary_results.png'), width = 11, height = 4.5, res = 300, units = 'in')
 p1 + p2 + p3 + plot_layout(ncol = 3)
 dev.off()
+
+
+# richness and abundance plots --------------------------------------------
+
+# setup connection
+con <- DBI::dbConnect(
+  RPostgreSQL::PostgreSQL(),
+  dbname = 'smc', 
+  host = '192.168.1.17', 
+  user = rstudioapi::askForPassword('Database user'), 
+  password = rstudioapi::askForPassword("Database password")
+)
+
+# raw connections
+datbugcon <- tbl(con, 'tbl_taxonomyresults') %>% 
+  filter(stationcode %in% c("SMC00476", "SGUR103", "SMC01424", "SMC01384", "801M16861", "SMC02984")) %>% 
+  group_by(stationcode) %>%
+  filter(sampledate == max(sampledate)) %>%
+  filter(fieldreplicate == max(fieldreplicate)) %>% 
+  collect()
+
+bug_origin <- as_tibble(datbugcon) %>% 
+  select("stationcode", "sampledate", "fieldreplicate", 
+         "fieldsampleid","finalid", "lifestagecode", 
+         "baresult", "result", "unit", 
+         "distinctcode")%>%
+  mutate(
+    baresult = as.numeric(baresult)
+  )
+
+# Fix names
+colnames(bug_origin) <- c("StationCode","SampleDate","SampleID", 
+                          "FieldSampleID", "FinalID", "LifeStageCode", 
+                          "BAResult", "Result", "Unit", 
+                          "distinct")
+
+bug.site.clean <- CSCI::cleanData(bug_origin, purge = T) %>% 
+  group_by(StationCode, FinalID) %>% 
+  summarise(BAResult = sum(BAResult)) %>% 
+  ungroup
+
+# summarize diversity, richness, evenness
+div <- bug.site.clean %>% 
+  group_by(StationCode) %>% 
+  nest %>% 
+  mutate(
+    sums = purrr::map(data, function(x){
+      
+      x <- x %>% 
+        select(FinalID, BAResult) %>% 
+        spread(FinalID, BAResult)
+      
+      div <- diversity(x, index = 'shannon')
+      ric <- ncol(x)
+      evn <- div / log(ric)
+      
+      out <- data.frame(div = div, ric = ric, evn = evn)
+      
+      return(out)
+      
+    })
+  ) %>% 
+  unnest(sums) %>% 
+  select(-data) %>% 
+  gather('var', 'val', -StationCode)
+
+# abundance/richness plot
+p <- ggplot(bug.site.clean, aes(x = reorder_within(FinalID, BAResult, StationCode), y = BAResult, fill = BAResult)) + 
+  geom_bar(stat = 'identity', color = 'grey') + 
+  facet_wrap(StationCode~., scales = 'free_y') + 
+  theme_bw() +
+  theme(
+    axis.title = element_blank(), 
+    axis.text.y = element_text(size = 5.5), 
+    legend.position = 'none', 
+    strip.background = element_blank()
+  ) + 
+  scale_fill_continuous_sequential('Peach') +
+  scale_x_reordered() +
+  coord_flip() 
+
+png(here('siteabu.png'), height = 9, width = 12, units = 'in', res = 300, family = 'serif')
+p 
+dev.off()
+
