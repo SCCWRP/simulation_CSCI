@@ -86,6 +86,9 @@ plot_fun <- function(site){
     scale_color_manual("", 
                        breaks = c("Spherical", "Exponential"), 
                        values = c("darkgreen", "red"))+
+    theme(
+      legend.position = c(0, 1)
+    ) +
     ggtitle(paste("Station", site), 
             subtitle = paste("CSCI score = ", round(site_csci,3), ", number of bugs = ", site_bug,
                              "\nrange: exponential: ", round(ae,2),

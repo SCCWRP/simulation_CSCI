@@ -481,13 +481,13 @@ site1$csci + site2$csci + site3$csci + site4$csci + site5$csci + site6$csci + si
 ### MMI
 
 ```{r, fig.height = 10, fig.width = 11, out.width = "100%"}
-site1$mmi + site2$mmi + site3$mmi + site4$mmi + site5$mmi + site6$mmi + site7$mmi + plot_layout(ncol = 4)
+site1$mmi + site2$mmi + site3$mmi + site4$mmi + site5$mmi + site6$mmi + site7$mmi + plot_layout(ncol = 2)
 ```
 
 ### OoverE
 
 ```{r, fig.height = 10, fig.width = 11, out.width = "100%"}
-site1$oovere + site2$oovere + site3$oovere + site4$oovere + site5$oovere + site6$oovere + site7$oovere + plot_layout(ncol = 4)
+site1$oovere + site2$oovere + site3$oovere + site4$oovere + site5$oovere + site6$oovere + site7$oovere + plot_layout(ncol = 2)
 ```
 
 ### ranked data

@@ -29,6 +29,9 @@ scores_plot <- function(site, station_list){
     geom_vline(xintercept = as, color = "red", linetype = 4) +
     labs(x = "Sample size", y = "CSCI score",
          fill = "model") +
+    theme(
+      legend.position = c(0, 1)
+    ) +
     scale_color_manual("", 
                        breaks = c("Spherical", "Exponential"), 
                        values = c("darkgreen", "red"))+
