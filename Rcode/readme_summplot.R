@@ -79,7 +79,7 @@ p1 <- ggplot(moddat, aes(x = Count, y = av, group = Site, colour = Site)) +
   labs(
     x = 'Sample count', 
     y = 'CSCI score', 
-    title = 'Average score for 100 subsamples\nat each sample count'
+    title = '(a) Average score for 100 subsamples\nat each sample count'
   ) +
   scale_color_discrete_qualitative(palette = colpal)
   
@@ -95,7 +95,7 @@ p2 <- ggplot(moddat, aes(x = Count, y = avrc, group = Site, colour = Site)) +
   labs(
     x = 'Sample count', 
     y = 'Relative CSCI', 
-    title = 'Relative scores scaled by actual CSCI'
+    title = '(b) Relative scores scaled by actual CSCI'
   ) +
   scale_color_discrete_qualitative(palette = colpal)
 
@@ -108,7 +108,7 @@ p3 <- ggplot(moddat, aes(x = Count, y = cv, group = Site, colour = Site)) +
   labs(
     x = 'Sample count', 
     y = 'Coefficient of variation', 
-    title = 'Variation of CSCI scores for each\nsample count'
+    title = '(c) Variation of CSCI scores for each\nsample count'
   ) +
   scale_color_discrete_qualitative(palette = colpal)
 
