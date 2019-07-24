@@ -4,9 +4,10 @@ library(glue)
 library(tidyverse)
 library(colorspace)
 library(drlib)
-library(dbpyr)
+library(dbplyr)
 library(RPostgreSQL)
 library(CSCI)
+library(patchwork)
 
 # effort summary plots ----------------------------------------------------
 
@@ -119,7 +120,7 @@ p3 <- ggplot(toplo, aes(x = Count, y = cv, colour = Site)) +
   geom_point(alpha = 0.6) +
   geom_hline(yintercept = 0.1, linetype = 'dashed') +
   geom_line(aes(y = cvests), size = 1) +
-  geom_smooth(data = filter(toplo, is.na(cvests)), se = F) +
+  geom_smooth(data = filter(toplo, is.na(cvests)), se = F, span = 1.5) +
   theme_bw(base_family = 'serif') + 
   theme(legend.position = 'none') +
   labs(
