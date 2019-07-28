@@ -1,6 +1,6 @@
 # README
 
-## Quynh-Thi Ho, Marcus Beck
+#### Quynh-Thi Ho, Marcus Beck
 
 Analysis code for evaluating effects of changing sample count and taxa ambiguity on CSCI scores
 
