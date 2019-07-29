@@ -1,5 +1,8 @@
-For the set of codes that numbered, no need to run simulating data function
-Those simulations are in the stations folder.
+# README
+
+#### Quynh-Thi Ho, Marcus Beck
+
+Analysis code for evaluating effects of changing sample count and taxa ambiguity on CSCI scores
 
 Results: [https://sccwrp.github.io/simulation_CSCI/Rmarkdown/CSCI_sample.html](https://sccwrp.github.io/simulation_CSCI/Rmarkdown/CSCI_sample.html)
 
