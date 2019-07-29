@@ -1,7 +1,16 @@
+library(foreach)
+library(doParallel)
 
+# set up for parallel processing ------------------------------------------
+
+nc <- detectCores()
+cl<-makeCluster(nc-1)
+registerDoParallel(cl)
+
+
+# sample ------------------------------------------------------------------
 
 simulating_bugs_and_scores <- function(bug_origin, site, gis, it, inc, num_bug, num_bug_start){
-  sub_sampling_chosen_site(bug_origin, site, num_bug)
   gis.station <- gis %>%
     filter(StationCode == site)
   nb <- seq(num_bug_start, num_bug, by = inc)
