@@ -21,14 +21,29 @@ datgiscon <- tbl(con, 'tblgismetrics')
 datbugcon <- tbl(con, 'tbl_taxonomyresults')
 CSCIcore <- tbl(con, 'csci_core')
 
-core <- as_tibble(CSCIcore)
+# Pick only the chosen stations ------------------------------------
+datbugcon <- tbl(con, 'tbl_taxonomyresults') %>% 
+  filter(stationcode %in% c("SMC00476", "SGUR103", "SMC01424", "SMC01384", "801M16861", "SMC02984")) %>% 
+  group_by(stationcode) %>%
+  filter(sampledate == max(sampledate)) %>%
+  # filter(fieldreplicate == max(fieldreplicate)) %>% 
+  collect()
 
-pick <- core %>% 
-  filter(csci > 1.1, count > 500, 
-         pcnt_ambiguous_individuals < 0.1) %>%
-  slice(n()) %>%
-  select(stationcode)
 
+# metadata ----------------------------------------------------------------
+
+load(system.file("metadata.rdata", package="BMIMetrics"))
+
+### 
+# 
+# core <- as_tibble(CSCIcore)
+# 
+# pick <- core %>% 
+#   filter(csci > 1.1, count > 500, 
+#          pcnt_ambiguous_individuals < 0.1) %>%
+#   slice(n()) %>%
+#   select(stationcode)
+# 
 
 
 gis <- as_tibble(datgiscon)  %>%
@@ -59,28 +74,26 @@ colnames(bug) <- c("StationCode","SampleDate","SampleID",
                         "distinct")
 
 #site <- as.character(pick 1)
-site <- c("SMC00480", "SMC04524", 
-          "SMC02302", "SMC00574")
+site_list <- c("SMCR8_277","SMC00476", "SGUR103",  
+                       "SMC01424", "SMC01384", "801M16861","SMC02984")
 
+
+# -------------------------------------------------------------------------
 
 # Pick bug site and gis based on sationcode
 bug.site <- bug %>% 
-  filter(StationCode == site) %>%
+  filter(StationCode == site[1]) %>%
   filter(SampleDate == max(SampleDate)) %>%
   filter(SampleID == max(SampleID))
 
 gis.station <- gis %>% 
-  filter(StationCode == site)
-
+  filter(StationCode == site[1])
 
 bug.site.new <- CSCI::cleanData(bug.site, purge = TRUE, msgs = FALSE)
 
 
 library(CSCI)
-site_core = CSCI(bug.site.new,gis.station)
-
-
-
+site_core = CSCI(bug.site.new,gis.station)$core[['Pcnt_Ambiguous_Individuals']]
 
 # picking stations
 common <-  semi_join(bug, gis)
