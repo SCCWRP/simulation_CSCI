@@ -9,7 +9,8 @@ library(CSCI)
 library(patchwork)
 
 sum_dat <- bind_rows(data_ready)
-  
+#save(sum_dat, file = 'stations/sum-ambig.RData')
+
 dat <- sum_dat %>% 
   group_by(StationCode) %>% 
   select(
