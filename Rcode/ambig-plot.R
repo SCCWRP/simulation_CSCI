@@ -8,8 +8,18 @@ library(RPostgreSQL)
 library(CSCI)
 library(patchwork)
 
+
+
+# function in 2.1 ---------------------------------------------------------
+
+data_ready <- c()
+for(i in seq_along(site_list)){
+  data_ready[[i]] <- summarising_ambig_tidied_data(site_list[i])
+}
+
 sum_dat <- bind_rows(data_ready)
-  
+#save(sum_dat, file = 'stations/sum-ambig.RData')
+
 dat <- sum_dat %>% 
   group_by(StationCode) %>% 
   select(
