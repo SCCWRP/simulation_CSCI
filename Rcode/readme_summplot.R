@@ -44,7 +44,7 @@ sumdat <- tibble(
   select(-labs)
 
 # fit exponential models to the results
-moddat <- sumdat %>% 
+moddateff <- sumdat %>% 
   group_by(Site) %>% 
   mutate(
     ests = predict(nls(av~c0e + ce*(1-exp(-abs(Count)/ae)), 
@@ -75,12 +75,12 @@ moddat <- sumdat %>%
 
 # plots
 
-newlbs <- reorder(moddat$Site, moddat$av, max) %>% 
+newlbs <- reorder(moddateff$Site, moddat$av, max) %>% 
   attr('scores') %>% 
   round(2) %>% 
   sort(decreasing = T)
 
-toplo <- moddat %>% 
+toplo <- moddateff %>% 
   mutate(
     Site = factor(Site, levels = names(newlbs), labels = newlbs)
   )
@@ -285,7 +285,7 @@ moddat <- sumdat %>%
 
 # plots
 
-newlbs <- reorder(moddat$Site, moddat$av, max) %>% 
+newlbs <- reorder(moddateff$Site, moddat$av, max) %>% 
   attr('scores') %>% 
   round(2) %>% 
   sort(decreasing = T)
