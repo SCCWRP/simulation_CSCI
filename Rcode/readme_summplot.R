@@ -130,10 +130,9 @@ p3 <- ggplot(toplo, aes(x = Count, y = cv, colour = Site)) +
   ) +
   scale_color_discrete_sequential(palette = colpal)
 
-png(here('summary_results.png'), width = 11, height = 4.5, res = 300, units = 'in')
+png(here('summary_results_effort.png'), width = 11, height = 4.5, res = 300, units = 'in')
 p1 + p2 + p3 + plot_layout(ncol = 3)
 dev.off()
-
 
 # richness and abundance plots --------------------------------------------
 
@@ -225,5 +224,134 @@ p <- ggplot(bug.site.clean, aes(x = reorder_within(SAFIT1, BAResult, StationCode
 
 png(here('siteabu.png'), height = 9, width = 12, units = 'in', res = 300, family = 'serif')
 p 
+dev.off()
+
+# ambiguous summary plots -------------------------------------------------
+
+# import results
+load(file = 'stations/sum-ambig.RData')
+
+# extract summary results for each, get average, sd, cv
+sumdat <- sum_dat %>% 
+  filter(!StationCode %in% 'SMCR8_277') %>% 
+  select(StationCode, Pcnt_Replaced, CSCI_mean, CSCI_sd) %>% 
+  rename(
+    Site = StationCode,
+    av = CSCI_mean,
+    sd = CSCI_sd
+  ) %>% 
+  mutate(
+    cv = sd / av, 
+    Pcnt_Complete = 1 - Pcnt_Replaced
+  )
+
+# fit exponential models to the results
+moddat <- sumdat %>% 
+  group_by(Site) %>% 
+  nest %>% 
+  mutate(
+    data = purrr::map(data, function(x){
+      
+      # ave values
+      modav <- try(nls(av ~ SSasymp(Pcnt_Complete, yf, y0, log_alpha), data = x))
+      if(inherits(modav, 'try-error')) 
+        avests <- NA
+      else 
+        avests <- predict(modav)
+      
+      # cv values
+      modcv <- try(nls(cv ~ SSasymp(Pcnt_Complete, yf, y0, log_alpha), data = x))
+      if(inherits(modcv, 'try-error')) 
+        cvests <- NA
+      else 
+        cvests <- predict(modcv)
+      
+      x <- x %>% 
+        mutate(
+          avests = avests,
+          cvests = cvests
+        )
+      
+      return(x)
+      
+    }) 
+  ) %>% 
+  unnest %>% 
+  group_by(Site) %>% 
+  mutate(
+    avrc = av / max(av)
+  ) %>% 
+  ungroup
+
+# plots
+
+newlbs <- reorder(moddat$Site, moddat$av, max) %>% 
+  attr('scores') %>% 
+  round(2) %>% 
+  sort(decreasing = T)
+
+toplo <- moddat %>% 
+  mutate(
+    Site = factor(Site, levels = names(newlbs), labels = newlbs)
+  )
+
+colpal <- 'agGrnYl'
+
+p1 <- ggplot(toplo, aes(x = Pcnt_Complete, y = av, colour = Site)) + 
+  geom_point(alpha = 0.6) +
+  geom_hline(data = filter(group_by(toplo, Site), avests == max(avests)), aes(yintercept = avests, colour = reorder(Site, av, max)), linetype = 'dashed') +
+  # geom_line(aes(y = avests), size = 1) +
+  geom_smooth(method = 'nls', 
+              formula = y ~ SSasymp(x, yf, y0, log_alpha), 
+              se = F
+  ) +
+  theme_bw(base_family = 'serif') + 
+  theme(legend.position = 'none') + 
+  labs(
+    x = '% taxa identified', 
+    y = 'CSCI score', 
+    title = '(a) Average score for 100 subsamples\nat each percentage of taxa identified'
+  ) +
+  scale_color_discrete_sequential(palette = colpal)
+
+p2 <- ggplot(toplo, aes(x = Pcnt_Complete, y = avrc, colour = Site)) + 
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0.9, linetype = 'dashed') +
+  geom_smooth(method = 'nls', 
+              formula = y ~ SSasymp(x, yf, y0, log_alpha), 
+              se = F
+  ) +
+  theme_bw(base_family = 'serif') + 
+  theme(
+    legend.position = c(0.8, 0.27)
+  ) +
+  labs(
+    x = '% taxa identified', 
+    y = 'Relative CSCI', 
+    title = '(b) Relative scores scaled by actual CSCI'
+  ) +
+  guides(colour = guide_legend(title = 'Actual CSCI')) + 
+  scale_color_discrete_sequential(palette = colpal)  
+
+p3 <- ggplot(toplo, aes(x = Pcnt_Complete, y = cv, colour = Site)) + 
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0.1, linetype = 'dashed') +
+  # geom_line(aes(y = cvests), size = 1) +
+  # geom_smooth(method = 'nls', 
+  #             formula = y ~ SSasymp(x, yf, y0, log_alpha), 
+  #             se = F
+  # ) +
+  geom_smooth(se = F, span = 1.5) +
+  theme_bw(base_family = 'serif') + 
+  theme(legend.position = 'none') +
+  labs(
+    x = '% taxa identified', 
+    y = 'Coefficient of variation', 
+    title = '(c) Variation of CSCI scores at each\npercentage of taxa identified'
+  ) +
+  scale_color_discrete_sequential(palette = colpal)
+
+png(here('summary_results_ambig.png'), width = 11, height = 4.5, res = 300, units = 'in')
+p1 + p2 + p3 + plot_layout(ncol = 3)
 dev.off()
 
