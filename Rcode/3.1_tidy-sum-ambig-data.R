@@ -34,6 +34,15 @@ summarising_ambig_tidied_data <- function(site){
                        ~sd(.), 
                        ~quantile(., probs = 0.025),
                        ~quantile(., probs = 0.975))
-    )
+    ) %>% 
+    mutate(StationCode = site)
   return(summary_data)
 }
+
+site_list <- c("SMCR8_277","SMC00476", "SGUR103",  
+               "SMC01424", "SMC01384", "801M16861","SMC02984")
+data_ready <- c()
+for(i in seq_along(site_list)){
+  data_ready[[i]] <- summarising_ambig_tidied_data(site_list[i])
+}
+
